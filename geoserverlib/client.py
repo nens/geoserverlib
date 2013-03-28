@@ -253,6 +253,22 @@ class GeoserverClient(object):
         return r
 
 
+    def delete_layer(self, layer):
+        """
+        cURL example:
+        curl -u admin:geoserver -XDELETE -H 'Content-type: text/xml' http://localhost:${GEOSERVER_PORT}/geoserver/rest/layers/deltaportaalview
+
+        """
+        request_url = url(self.base_url, ['/geoserver/rest/layers', layer])
+        r = requests.delete(request_url, auth=self.auth)
+        if r.ok:
+            print "deleted '%s' layer" % layer
+        else:
+            print "NOT OK"
+            print r.text
+        return r
+
+
     def create_style(self, style_name, style_filename):
         """
 
