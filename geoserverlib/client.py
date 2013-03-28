@@ -272,7 +272,6 @@ class GeoserverClient(object):
         r = requests.post(request_url, data=json.dumps(payload),
                           headers=headers, auth=self.auth)
         if r.ok:
-            # TODO: upload style file, second curl command
             request_url = url(self.base_url, ['/geoserver/rest/styles',
                                               style_name])
             xml = open(style_filename, 'r').read()
