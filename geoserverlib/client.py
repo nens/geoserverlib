@@ -7,7 +7,7 @@ import urlparse
 import requests
 
 
-logger = logging.getLogger('geoserverlib.server')
+logger = logging.getLogger('geoserverlib.client')
 
 
 def url(base, seg, query=None):
@@ -36,7 +36,6 @@ class GeoserverClient(object):
         self.base_url = 'http://%s:%s' % (self.host, self.port)
         self.auth = (self.username, self.password)
 
-
     def workspace_exists(self, workspace):
         request_url = url(self.base_url, ['/geoserver/rest/workspaces',
                                           workspace])
@@ -49,9 +48,8 @@ class GeoserverClient(object):
             # workspace does not exist
             return False
         else:
-            print "unexpected status code: %s" % r.status_code
-            print r.text
-
+            logger.error("unexpected status code: %s (%s)" % (r.status_code,
+                                                              r.text))
 
     def create_workspace(self, workspace):
         """
@@ -64,18 +62,31 @@ class GeoserverClient(object):
             print "workspace '%s' already exists" % workspace
             return False
         request_url = url(self.base_url, ['/geoserver/rest/workspaces'])
-        logger.info("request url: %s" % request_url)
+        logger.debug("request url: %s" % request_url)
         headers = {'content-type': 'application/json'}
         payload = {'workspace': {'name': workspace}}
         r = requests.post(request_url, data=json.dumps(payload),
                           headers=headers, auth=self.auth)
         if r.ok:
-            print "workspace '%s' created successfully" % workspace
+            logger.info("workspace '%s' created successfully" % workspace)
         else:
-            print "NOT OK"
-            print r.text
+            logger.error("NOT OK: %s" % r.text)
         return r
 
+    def delete_workspace(self, workspace):
+        """
+        cURL example:
+        curl -u admin:geoserver -XDELETE -H 'Content-type: text/xml' http://localhost:${GEOSERVER_PORT}/geoserver/rest/workspaces/deltaportaal
+
+        """
+        request_url = url(self.base_url, ['/geoserver/rest/workspaces',
+                                          workspace])
+        r = requests.delete(request_url, auth=self.auth)
+        if r.ok:
+            logger.info("deleted workspace '%s'" % workspace)
+        else:
+            logger.error("NOT OK: %s" % r.text)
+        return r
 
     def datastore_exists(self, workspace, datastore):
         request_url = url(self.base_url, ['/geoserver/rest/workspaces',
@@ -89,9 +100,8 @@ class GeoserverClient(object):
             # workspace does not exist
             return False
         else:
-            print "unexpected status code: %s" % r.status_code
-            print r.text
-
+            logger.warning("unexpected status code: %s (%s)" % (r.status_code,
+                                                                r.text))
 
     def create_datastore(self, workspace, datastore, connection_parameters):
         """
@@ -115,7 +125,7 @@ class GeoserverClient(object):
         """
         # if datastore exists, return
         if self.datastore_exists(workspace, datastore):
-            print "datastore '%s' already exists" % datastore
+            logger.error("datastore '%s' already exists" % datastore)
             return False
         request_url = url(self.base_url, ['/geoserver/rest/workspaces',
                                           workspace, 'datastores'])
@@ -130,12 +140,25 @@ class GeoserverClient(object):
         r = requests.post(request_url, data=json.dumps(payload),
                           headers=headers, auth=self.auth)
         if r.ok:
-            print "datastore '%s' created successfully" % datastore
+            logger.info("datastore '%s' created successfully" % datastore)
         else:
-            print "NOT OK"
-            print r.text
+            logger.error("NOT OK: %s" % r.text)
         return r
 
+    def delete_datastore(self, workspace, datastore):
+        """
+        cURL example:
+        curl -u admin:geoserver -XDELETE -H 'Content-type: text/xml' http://localhost:${GEOSERVER_PORT}/geoserver/rest/workspaces/deltaportaal/datastores/deltaportaal
+
+        """
+        request_url = url(self.base_url, ['/geoserver/rest/workspaces',
+                                          workspace, 'datastores', datastore])
+        r = requests.delete(request_url, auth=self.auth)
+        if r.ok:
+            logger.info("deleted datastore '%s'" % datastore)
+        else:
+            logger.error("NOT OK: %s" % r.text)
+        return r
 
     def create_feature_type(self, workspace, datastore, view, sql_query):
         """
@@ -246,12 +269,10 @@ class GeoserverClient(object):
         r = requests.post(request_url, data=json.dumps(payload),
                           headers=headers, auth=self.auth)
         if r.ok:
-            print "view '%s' created successfully" % view
+            logger.info("view '%s' created successfully" % view)
         else:
-            print "NOT OK"
-            print r.text
+            logger.error("NOT OK: %s" % r.text)
         return r
-
 
     def delete_layer(self, layer):
         """
@@ -262,12 +283,26 @@ class GeoserverClient(object):
         request_url = url(self.base_url, ['/geoserver/rest/layers', layer])
         r = requests.delete(request_url, auth=self.auth)
         if r.ok:
-            print "deleted '%s' layer" % layer
+            logger.info("deleted '%s' layer" % layer)
         else:
-            print "NOT OK"
-            print r.text
+            logger.error("NOT OK: %s" % r.text)
         return r
 
+    def delete_feature_type(self, workspace, datastore, layer):
+        """
+        cURL example:
+        curl -u admin:geoserver -XDELETE -H 'Content-type: text/xml' http://localhost:${GEOSERVER_PORT}/geoserver/rest/workspaces/deltaportaal/datastores/deltaportaal/featuretypes/deltaportaalview
+
+        """
+        request_url = url(self.base_url, ['/geoserver/rest/workspaces',
+                                          workspace, 'datastores', datastore,
+                                          'featuretypes', layer])
+        r = requests.delete(request_url, auth=self.auth)
+        if r.ok:
+            logger.info("deleted '%s' feature type" % layer)
+        else:
+            logger.error("NOT OK: %s" % r.text)
+        return r
 
     def create_style(self, style_name, style_filename):
         """
@@ -295,7 +330,7 @@ class GeoserverClient(object):
             r = requests.put(request_url, data=xml, headers=headers,
                              auth=self.auth)
             if r.ok:
-                print "style '%s' created successfully" % style_name
+                logger.info("style '%s' created successfully" % style_name)
             else:
                 print "NOT OK"
                 print r.text
@@ -304,6 +339,20 @@ class GeoserverClient(object):
             print r.text
         return r
 
+    def delete_style(self, style_name):
+        """
+        cURL example:
+        curl -u admin:geoserver -XDELETE -H 'Content-type: text/xml' http://localhost:${GEOSERVER_PORT}/geoserver/rest/styles/deltaportaal
+
+        """
+        request_url = url(self.base_url, ['/geoserver/rest/styles',
+                                          style_name])
+        r = requests.delete(request_url, auth=self.auth)
+        if r.ok:
+            logger.info("deleted style '%s'" % style_name)
+        else:
+            logger.error("NOT OK: %s" % r.text)
+        return r
 
     def set_default_style(self, workspace, datastore, view, style_name):
         """
@@ -323,14 +372,12 @@ class GeoserverClient(object):
             }
         }
         r = requests.put(request_url, data=json.dumps(payload),
-                          headers=headers, auth=self.auth)
+                         headers=headers, auth=self.auth)
         if r.ok:
-            print "made '%s' the default style" % style_name
+            logger.info("made '%s' the default style" % style_name)
         else:
-            print "NOT OK"
-            print r.text
+            logger.error("NOT OK: %s" % r.text)
         return r
-
 
     def show_feature_type(self, workspace, datastore, view, output='xml'):
         """
