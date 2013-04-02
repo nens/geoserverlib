@@ -26,6 +26,13 @@ def url(base, seg, query=None):
     return urlparse.urljoin(adjusted_base, path)
 
 
+def process_response(response, success_msg):
+    if response.ok:
+        logger.info(success_msg)
+    else:
+        logger.error(response.text)
+
+
 class GeoserverClient(object):
     """Geoserver client class for storing connection details."""
     def __init__(self, host, port, username, password):
@@ -41,15 +48,15 @@ class GeoserverClient(object):
                                           workspace])
         logger.debug("request url: %s" % request_url)
         headers = {'content-type': 'application/json'}
-        r = requests.get(request_url, headers=headers, auth=self.auth)
-        if r.ok:
+        response = requests.get(request_url, headers=headers, auth=self.auth)
+        if response.ok:
             return True
-        elif r.status_code == 404:
+        elif response.status_code == 404:
             # workspace does not exist
             return False
         else:
-            logger.error("unexpected status code: %s (%s)" % (r.status_code,
-                                                              r.text))
+            logger.error("unexpected status code: %s (%s)" % (
+                response.status_code, response.text))
 
     def create_workspace(self, workspace):
         """
@@ -65,13 +72,11 @@ class GeoserverClient(object):
         logger.debug("request url: %s" % request_url)
         headers = {'content-type': 'application/json'}
         payload = {'workspace': {'name': workspace}}
-        r = requests.post(request_url, data=json.dumps(payload),
-                          headers=headers, auth=self.auth)
-        if r.ok:
-            logger.info("workspace '%s' created successfully" % workspace)
-        else:
-            logger.error("NOT OK: %s" % r.text)
-        return r
+        response = requests.post(request_url, data=json.dumps(payload),
+                                 headers=headers, auth=self.auth)
+        success_msg = "workspace '%s' created successfully" % workspace
+        process_response(response, success_msg)
+        return response
 
     def delete_workspace(self, workspace):
         """
@@ -81,27 +86,25 @@ class GeoserverClient(object):
         """
         request_url = url(self.base_url, ['/geoserver/rest/workspaces',
                                           workspace])
-        r = requests.delete(request_url, auth=self.auth)
-        if r.ok:
-            logger.info("deleted workspace '%s'" % workspace)
-        else:
-            logger.error("NOT OK: %s" % r.text)
-        return r
+        response = requests.delete(request_url, auth=self.auth)
+        success_msg = "deleted workspace '%s'" % workspace
+        process_response(response, success_msg)
+        return response
 
     def datastore_exists(self, workspace, datastore):
         request_url = url(self.base_url, ['/geoserver/rest/workspaces',
                                           workspace, 'datastores', datastore])
         logger.debug("request url: %s" % request_url)
         headers = {'content-type': 'application/json'}
-        r = requests.get(request_url, headers=headers, auth=self.auth)
-        if r.ok:
+        response = requests.get(request_url, headers=headers, auth=self.auth)
+        if response.ok:
             return True
-        elif r.status_code == 404:
+        elif response.status_code == 404:
             # workspace does not exist
             return False
         else:
-            logger.warning("unexpected status code: %s (%s)" % (r.status_code,
-                                                                r.text))
+            logger.warning("unexpected status code: %s (%s)" % (
+                response.status_code, response.text))
 
     def create_datastore(self, workspace, datastore, connection_parameters):
         """
@@ -137,13 +140,11 @@ class GeoserverClient(object):
                 'connectionParameters': connection_parameters
             }
         }
-        r = requests.post(request_url, data=json.dumps(payload),
-                          headers=headers, auth=self.auth)
-        if r.ok:
-            logger.info("datastore '%s' created successfully" % datastore)
-        else:
-            logger.error("NOT OK: %s" % r.text)
-        return r
+        response = requests.post(request_url, data=json.dumps(payload),
+                                 headers=headers, auth=self.auth)
+        success_msg = "datastore '%s' created successfully" % datastore
+        process_response(response, success_msg)
+        return response
 
     def delete_datastore(self, workspace, datastore):
         """
@@ -153,12 +154,10 @@ class GeoserverClient(object):
         """
         request_url = url(self.base_url, ['/geoserver/rest/workspaces',
                                           workspace, 'datastores', datastore])
-        r = requests.delete(request_url, auth=self.auth)
-        if r.ok:
-            logger.info("deleted datastore '%s'" % datastore)
-        else:
-            logger.error("NOT OK: %s" % r.text)
-        return r
+        response = requests.delete(request_url, auth=self.auth)
+        success_msg = "deleted datastore '%s'" % datastore
+        process_response(response, success_msg)
+        return response
 
     def create_feature_type(self, workspace, datastore, view, sql_query):
         """
@@ -266,13 +265,11 @@ class GeoserverClient(object):
                 }
             }
         }
-        r = requests.post(request_url, data=json.dumps(payload),
-                          headers=headers, auth=self.auth)
-        if r.ok:
-            logger.info("view '%s' created successfully" % view)
-        else:
-            logger.error("NOT OK: %s" % r.text)
-        return r
+        response = requests.post(request_url, data=json.dumps(payload),
+                                 headers=headers, auth=self.auth)
+        success_msg = "view '%s' created successfully" % view
+        process_response(response, success_msg)
+        return response
 
     def delete_layer(self, layer):
         """
@@ -281,12 +278,10 @@ class GeoserverClient(object):
 
         """
         request_url = url(self.base_url, ['/geoserver/rest/layers', layer])
-        r = requests.delete(request_url, auth=self.auth)
-        if r.ok:
-            logger.info("deleted '%s' layer" % layer)
-        else:
-            logger.error("NOT OK: %s" % r.text)
-        return r
+        response = requests.delete(request_url, auth=self.auth)
+        success_msg = "deleted '%s' layer" % layer
+        process_response(response, success_msg)
+        return response
 
     def delete_feature_type(self, workspace, datastore, layer):
         """
@@ -297,12 +292,10 @@ class GeoserverClient(object):
         request_url = url(self.base_url, ['/geoserver/rest/workspaces',
                                           workspace, 'datastores', datastore,
                                           'featuretypes', layer])
-        r = requests.delete(request_url, auth=self.auth)
-        if r.ok:
-            logger.info("deleted '%s' feature type" % layer)
-        else:
-            logger.error("NOT OK: %s" % r.text)
-        return r
+        response = requests.delete(request_url, auth=self.auth)
+        success_msg = "deleted '%s' feature type" % layer
+        process_response(response, success_msg)
+        return response
 
     def create_style(self, style_name, style_filename):
         """
@@ -320,24 +313,20 @@ class GeoserverClient(object):
                 'filename': os.path.split(style_filename)[1]
             }
         }
-        r = requests.post(request_url, data=json.dumps(payload),
-                          headers=headers, auth=self.auth)
-        if r.ok:
+        response = requests.post(request_url, data=json.dumps(payload),
+                                 headers=headers, auth=self.auth)
+        if response.ok:
             request_url = url(self.base_url, ['/geoserver/rest/styles',
                                               style_name])
             xml = open(style_filename, 'r').read()
             headers = {'content-type': 'application/vnd.ogc.sld+xml'}
-            r = requests.put(request_url, data=xml, headers=headers,
-                             auth=self.auth)
-            if r.ok:
-                logger.info("style '%s' created successfully" % style_name)
-            else:
-                print "NOT OK"
-                print r.text
+            response = requests.put(request_url, data=xml, headers=headers,
+                                    auth=self.auth)
+            success_msg = "style '%s' created successfully" % style_name
+            process_response(response, success_msg)
         else:
-            print "NOT OK"
-            print r.text
-        return r
+            logger.error(response.text)
+        return response
 
     def delete_style(self, style_name):
         """
@@ -347,12 +336,10 @@ class GeoserverClient(object):
         """
         request_url = url(self.base_url, ['/geoserver/rest/styles',
                                           style_name])
-        r = requests.delete(request_url, auth=self.auth)
-        if r.ok:
-            logger.info("deleted style '%s'" % style_name)
-        else:
-            logger.error("NOT OK: %s" % r.text)
-        return r
+        response = requests.delete(request_url, auth=self.auth)
+        success_msg = "deleted style '%s'" % style_name
+        process_response(response, success_msg)
+        return response
 
     def set_default_style(self, workspace, datastore, view, style_name):
         """
@@ -371,13 +358,11 @@ class GeoserverClient(object):
                 }
             }
         }
-        r = requests.put(request_url, data=json.dumps(payload),
-                         headers=headers, auth=self.auth)
-        if r.ok:
-            logger.info("made '%s' the default style" % style_name)
-        else:
-            logger.error("NOT OK: %s" % r.text)
-        return r
+        response = requests.put(request_url, data=json.dumps(payload),
+                                headers=headers, auth=self.auth)
+        success_msg = "made '%s' the default style" % style_name
+        process_response(response, success_msg)
+        return response
 
     def show_feature_type(self, workspace, datastore, view, output='xml'):
         """
@@ -389,5 +374,5 @@ class GeoserverClient(object):
         segments = ['/geoserver/rest/workspaces/%s/datastores/%s/featuretypes'
                     % (workspace, datastore), '%s.%s' % (view, output)]
         request_url = url(self.base_url, segments)
-        r = requests.get(request_url, auth=self.auth)
-        print r.text
+        response = requests.get(request_url, auth=self.auth)
+        print response.text
