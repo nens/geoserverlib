@@ -213,6 +213,25 @@ class GeoserverClient(object):
         process_response(response, success_msg)
         return response
 
+    def recalculate_bounding_boxes(self, workspace, datastore, view,
+                                   srs='EPSG:28992', srid=28992):
+        """
+        Request for recalculating native and lat/lon bounding boxes.
+
+        """
+        request_url = url(self.base_url, ['/geoserver/rest/workspaces',
+                                          workspace, 'datastores', datastore,
+                                          'featuretypes', view])
+        headers = {'content-type': 'text/xml'}
+        # needed payload, took name resetting
+        xml = '<featureType><name>%s</name></featureType>' % view
+        request_url = request_url + '?recalculate=nativebbox,latlonbbox'
+        response = requests.put(request_url, data=xml,
+                                headers=headers, auth=self.auth)
+        success_msg = "recalculated bounding boxes for '%s' layer" % view
+        process_response(response, success_msg)
+        return response
+
     def delete_layer(self, layer):
         """
         cURL example:
