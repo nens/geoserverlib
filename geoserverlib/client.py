@@ -213,8 +213,7 @@ class GeoserverClient(object):
         process_response(response, success_msg)
         return response
 
-    def recalculate_bounding_boxes(self, workspace, datastore, view,
-                                   srs='EPSG:28992', srid=28992):
+    def recalculate_bounding_boxes(self, workspace, datastore, view):
         """
         Request for recalculating native and lat/lon bounding boxes.
 
