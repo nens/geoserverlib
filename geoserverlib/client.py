@@ -10,6 +10,10 @@ import requests
 logger = logging.getLogger('geoserverlib.client')
 
 
+class GeoserverClientException(BaseException):
+    pass
+
+
 def url(base, seg, query=None):
     """
     Create a URL from a list of path segments and an optional dict of query
@@ -159,114 +163,52 @@ class GeoserverClient(object):
         process_response(response, success_msg)
         return response
 
-    def create_feature_type(self, workspace, datastore, view, sql_query):
+    def create_feature_type(self, workspace, datastore, view, sql_query,
+                            srs='EPSG:28992', srid=28992):
         """
         Mimicks XML cUrl command, for example:
 
         curl -u admin:geoserver -XPOST -T xml/featuretype.xml -H 'Content-type: text/xml' http://localhost:${GEOSERVER_PORT}/geoserver/rest/workspaces/deltaportaal/datastores/deltaportaal/featuretypes
 
+
+        WARNING: this method is done in XML because of a bug in the GeoServer
+        parsing of the VirtualTable in JSON format. In JSON it is not possible
+        to add a geometry without getting an IllegalArgumentException. Most
+        likely (but not certain), the case is an order problem, since JSON
+        dicts are unordered and XML is ordered.
+
         """
         request_url = url(self.base_url, ['/geoserver/rest/workspaces',
                                           workspace, 'datastores', datastore,
                                           'featuretypes'])
-        headers = {'content-type': 'application/json'}
-        payload = {
-            'featureType': {
-                'name': view,
-                'nativeName': view,
-                'namespace': {
-                    'name': workspace,
-                    'href': url(self.base_url, ['/geoserver/rest/namespaces',
-                                                '%s.json' % workspace])
-                },
-                'title': view,
-                'keywords': {
-                    'string': [view, 'features']
-                },
-                'nativeCRS': ('GEOGCS["WGS 84", DATUM["World Geodetic System '
-                              '1984", SPHEROID["WGS 84", 6378137.0, '
-                              '298.257223563, AUTHORITY["EPSG","7030"]], '
-                              'AUTHORITY["EPSG","6326"]], PRIMEM["Greenwich", '
-                              '0.0, AUTHORITY["EPSG","8901"]], '
-                              'UNIT["degree", 0.017453292519943295], '
-                              'AXIS["Geodetic longitude", EAST], '
-                              'AXIS["Geodetic latitude", NORTH], '
-                              'AUTHORITY["EPSG","4326"]]'),
-                'srs': 'EPSG:28992',
-                'nativeBoundingBox': {
-                    'crs': 'EPSG:4326',
-                    'maxx': 211954.375,
-                    'maxy': 510710.812500007,
-                    'minx': 63947.1821375899,
-                    'miny': 358627.978623543
-                },
-                'latLonBoundingBox': {
-                    'crs': ('GEOGCS["WGS84(DD)", DATUM["WGS84", '
-                            'SPHEROID["WGS84", 6378137.0, 298.257223563]], '
-                            'PRIMEM["Greenwich", 0.0], UNIT["degree", '
-                            '0.017453292519943295], '
-                            'AXIS["Geodetic longitude", EAST], '
-                            'AXIS["Geodetic latitude", NORTH]]'),
-                    'maxx': 211954.375,
-                    'maxy': 510710.812500007,
-                    'minx': 63947.1821375899,
-                    'miny': 358627.978623543
-                },
-                'projectionPolicy': 'FORCE_DECLARED',
-                'enabled': True,
-                'advertised': True,
-                'metadata': {
-                    'entry': {
-                        '@key': 'JDBC_VIRTUAL_TABLE',
-                        'virtualTable': {
-                            ## THESE LINES SHOULD BE COMMENTED, DOES NOT
-                            ## WORK WITH IT. THROWS ILLEGAL JSON EXCEPTION.
-                            ## AS XML IT DOES NOT THROW AN EXCEPTION.
-                            # 'geometry': {
-                            #     'name': 'the_geom',
-                            #     'srid': -1,
-                            #     'type': 'Geometry'
-                            # },
-                            'name': view,
-                            'sql': sql_query
-                        }
-                    }
-                },
-                'store': {
-                    '@class': 'dataStore',
-                    'href': url(self.base_url, ['/geoserver/rest/workspaces',
-                                                workspace, 'datastores',
-                                                '%s.json' % datastore]),
-                    'name': workspace
-                },
-                'maxFeatures': 0,
-                'numDecimals': 0,
-                'attributes': {
-                    'attribute': [{
-                        'binding': 'java.lang.Double',
-                        'maxOccurs': 1,
-                        'minOccurs': 0,
-                        'name': 'waterstand_actueel',
-                        'nillable': True
-                    }, {
-                        'binding': ('com.vividsolutions.jts.geom.'
-                                    'MultiLineString'),
-                        'maxOccurs': 1,
-                        'minOccurs': 0,
-                        'name': 'the_geom',
-                        'nillable': True
-                    }, {
-                        'binding': 'java.lang.Short',
-                        'maxOccurs': 1,
-                        'minOccurs': 0,
-                        'name': 'kilometer',
-                        'nillable': True
-                    }]
-                }
-            }
+        headers = {'content-type': 'text/xml'}
+        payload = """
+        <featureType>
+            <name>%(view)s</name>
+            <nativeCRS class="projected">PROJCS["Amersfoort / RD New", GEOGCS["Amersfoort", DATUM["Amersfoort", SPHEROID["Bessel 1841", 6377397.155, 299.1528128, AUTHORITY["EPSG","7004"]], TOWGS84[565.2369, 50.0087, 465.658, -0.40685733032239757, -0.3507326765425626, 1.8703473836067959, 4.0812], AUTHORITY["EPSG","6289"]], PRIMEM["Greenwich", 0.0, AUTHORITY["EPSG","8901"]], UNIT["degree", 0.017453292519943295], AXIS["Geodetic longitude", EAST], AXIS["Geodetic latitude", NORTH], AUTHORITY["EPSG","4289"]], PROJECTION["Oblique_Stereographic", AUTHORITY["EPSG","9809"]], PARAMETER["central_meridian", 5.387638888888891], PARAMETER["latitude_of_origin", 52.15616055555556], PARAMETER["scale_factor", 0.9999079], PARAMETER["false_easting", 155000.0], PARAMETER["false_northing", 463000.0], UNIT["m", 1.0], AXIS["Easting", EAST], AXIS["Northing", NORTH], AUTHORITY["EPSG","%(srid)s"]]</nativeCRS>
+            <srs>%(srs)s</srs>
+            <metadata>
+                <entry key="cachingEnabled">false</entry>
+                <entry key="JDBC_VIRTUAL_TABLE">
+                <virtualTable>
+                    <name>%(view)s</name>
+                    <sql>%(sql_query)s</sql>
+                    <geometry>
+                        <name>geom</name>
+                        <type>Geometry</type>
+                        <srid>%(srid)s</srid>
+                    </geometry>
+                </virtualTable>
+                </entry>
+            </metadata>
+        </featureType>""" % {
+            'view': view,
+            'sql_query': sql_query,
+            'srs': srs,
+            'srid': srid
         }
-        response = requests.post(request_url, data=json.dumps(payload),
-                                 headers=headers, auth=self.auth)
+        response = requests.post(request_url, data=payload, headers=headers,
+                                 auth=self.auth)
         success_msg = "view '%s' created successfully" % view
         process_response(response, success_msg)
         return response
@@ -297,7 +239,7 @@ class GeoserverClient(object):
         process_response(response, success_msg)
         return response
 
-    def create_style(self, style_name, style_filename):
+    def create_style(self, style_name, style_filename=None, style_data=None):
         """
 
         cURL examples:
@@ -307,10 +249,14 @@ class GeoserverClient(object):
         """
         request_url = url(self.base_url, ['/geoserver/rest/styles'])
         headers = {'content-type': 'application/json'}
+        if style_filename:
+            filename = os.path.split(style_filename)[1]
+        else:
+            filename = '%s.sld' % style_name
         payload = {
             'style': {
                 'name': style_name,
-                'filename': os.path.split(style_filename)[1]
+                'filename': filename
             }
         }
         response = requests.post(request_url, data=json.dumps(payload),
@@ -318,7 +264,10 @@ class GeoserverClient(object):
         if response.ok:
             request_url = url(self.base_url, ['/geoserver/rest/styles',
                                               style_name])
-            xml = open(style_filename, 'r').read()
+            if style_data:
+                xml = style_data
+            else:
+                xml = open(style_filename, 'r').read()
             headers = {'content-type': 'application/vnd.ogc.sld+xml'}
             response = requests.put(request_url, data=xml, headers=headers,
                                     auth=self.auth)
