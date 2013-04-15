@@ -225,6 +225,7 @@ class GeoserverClient(object):
         headers = {'content-type': 'text/xml'}
         # needed payload, took name resetting
         xml = '<featureType><name>%s</name></featureType>' % view
+        # WARNING: GeoServer recalculate bug - delimiter is ' in 2.2 rc1, not ,
         request_url = request_url + '?recalculate=nativebbox,latlonbbox'
         response = requests.put(request_url, data=xml,
                                 headers=headers, auth=self.auth)
