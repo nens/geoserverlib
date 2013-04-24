@@ -4,8 +4,7 @@ Geoserverlib
 Introduction
 ------------
 
-    Geoserverlib is a `GeoServer`_ python client for creating, updating, and deleting
-    workspaces, data stores, feature types, layers and styles on geoservers.
+Geoserverlib is a `GeoServer`_ Python client for creating, updating, and deleting workspaces, data stores, feature types, layers and styles on geoservers.
 
 Usage
 -----
