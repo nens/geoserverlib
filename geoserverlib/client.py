@@ -170,12 +170,11 @@ class GeoserverClient(object):
 
         curl -u admin:geoserver -XPOST -T xml/featuretype.xml -H 'Content-type: text/xml' http://localhost:${GEOSERVER_PORT}/geoserver/rest/workspaces/deltaportaal/datastores/deltaportaal/featuretypes
 
-
         WARNING: this method is done in XML because of a bug in the GeoServer
         parsing of the VirtualTable in JSON format. In JSON it is not possible
-        to add a geometry without getting an IllegalArgumentException. Most
-        likely (but not certain), the case is an order problem, since JSON
-        dicts are unordered and XML is ordered.
+        to add a geometry without getting an IllegalArgumentException. The
+        cause is an order problem, since JSON dicts are unordered and XML is
+        ordered (see http://jira.codehaus.org/browse/GEOS-4986).
 
         """
         request_url = url(self.base_url, ['/geoserver/rest/workspaces',
@@ -222,7 +221,8 @@ class GeoserverClient(object):
                                           workspace, 'datastores', datastore,
                                           'featuretypes', view])
         headers = {'content-type': 'text/xml'}
-        # needed payload, took name resetting
+        # Need payload, took name resetting, but also requires
+        # <enabled>true</enabled> (reported by us through the mailing list).
         xml = '<featureType><name>%s</name><enabled>true</enabled></featureType>' % view
         # WARNING: GeoServer recalculate bug - delimiter is ' in 2.2 rc1, not ,
         request_url = request_url + '?recalculate=nativebbox,latlonbbox'
