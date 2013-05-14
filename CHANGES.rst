@@ -2,7 +2,7 @@ Changelog of geoserverlib
 ===================================================
 
 
-0.2 (unreleased)
+0.2 (2013-05-14)
 ----------------
 
 - Add comments that address workarounds around geoserver specific issues or 
