@@ -24,6 +24,14 @@ Usage
    client.workspace_exists(workspace)  # returns True or False
    client.delete_workspace(workspace)
 
+* shapefile methods::
+
+   workspace = 'my_workspace'
+   datastore = 'my_datastore'
+   path = absolute_path_to_zipped_shapefile
+
+   client.upload_shapefile(workspace, datastore, path)
+
 * datastore methods::
 
    datastore = 'my_datastore'

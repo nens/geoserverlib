@@ -110,6 +110,36 @@ class GeoserverClient(object):
             logger.warning("unexpected status code: %s (%s)" % (
                 response.status_code, response.text))
 
+    def upload_shapefile(self, workspace, datastore, path):
+        """
+        Mimicks XML cUrl command, for example:
+
+        curl -u admin:geoserver -XPUT -H 'Content-type: application/zip' --data-binary @shape.zip http://localhost:8080/geoserver/rest/workspaces/ror-export/datastores/test_vg1/test_vg1.shp       
+        
+        It seems that the filename in <filename>.shp is not used.
+
+        Path is the absolute path to the zipfile.
+        The separate .shp, .shx, .dbf etc. files must be in the root of the zip.
+        """
+        # if datastore exists, return
+        if self.datastore_exists(workspace, datastore):
+            logger.error("datastore '%s' already exists" % datastore)
+            return False
+        request_url = url(self.base_url, ['/geoserver/rest/workspaces',
+                                          workspace, 'datastores',
+                                          datastore, 'file.shp'])
+        headers = {'content-type': 'application/zip'}
+        # TODO: make datastore connection parameters configurable
+        archivefile = open(path, 'rb')
+        response = requests.put(request_url, headers=headers,
+                                auth=self.auth,
+                                files={'filename': archivefile})
+        success_msg = "shapefile datastore '%s' created successfully" % datastore
+        process_response(response, success_msg)
+        archivefile.close()
+        return response
+    
+    
     def create_datastore(self, workspace, datastore, connection_parameters):
         """
         Mimicks XML cUrl command, for example:

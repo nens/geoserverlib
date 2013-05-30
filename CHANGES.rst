@@ -5,7 +5,7 @@ Changelog of geoserverlib
 0.3 (unreleased)
 ----------------
 
-- Nothing changed yet.
+- Add shapefile upload method.
 
 
 0.2 (2013-05-14)
