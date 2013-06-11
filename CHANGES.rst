@@ -2,8 +2,8 @@ Changelog of geoserverlib
 ===================================================
 
 
-0.4 (unreleased)
-----------------
+0.3.1 (2013-06-11)
+------------------
 
 - Add method for adding and configuring an existing shapefile directory.
 
