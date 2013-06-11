@@ -31,6 +31,9 @@ Usage
    path = absolute_path_to_zipped_shapefile
 
    client.upload_shapefile(workspace, datastore, path)
+   
+   path = absolute_path_on_geoserver
+   client.add_shapefile_directory(workspace, datastore, path)
 
 * datastore methods::
 

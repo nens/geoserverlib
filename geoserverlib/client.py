@@ -116,8 +116,6 @@ class GeoserverClient(object):
 
         curl -u admin:geoserver -XPUT -H 'Content-type: application/zip' --data-binary @shape.zip http://localhost:8080/geoserver/rest/workspaces/ror-export/datastores/test_vg1/test_vg1.shp       
         
-        It seems that the filename in <filename>.shp is not used.
-
         Path is the absolute path to the zipfile.
         The separate .shp, .shx, .dbf etc. files must be in the root of the zip.
         """
@@ -129,7 +127,6 @@ class GeoserverClient(object):
                                           workspace, 'datastores',
                                           datastore, 'file.shp'])
         headers = {'content-type': 'application/zip'}
-        # TODO: make datastore connection parameters configurable
         archivefile = open(path, 'rb')
         response = requests.put(request_url, headers=headers,
                                 auth=self.auth,
@@ -139,6 +136,30 @@ class GeoserverClient(object):
         archivefile.close()
         return response
     
+    def add_shapefile_directory(self, workspace, datastore, path):
+        """
+        Mimicks XML cUrl command, for example:
+
+curl -v -u admin:geoserver -XPUT -H "Content-type: text/plain" -d "file:///var/lib/tomcat7/webapps/geoserver/data/data/ror-export/geo/" "http://localhost:8080/geoserver/rest/workspaces/ror-export/datastores/ror-export/external.shp?configure=all"
+        
+        Path is the absolute path on the geoserver machine to the
+        directory of shapefiles.
+        """
+        # if datastore exists, return
+        if self.datastore_exists(workspace, datastore):
+            logger.error("datastore '%s' already exists" % datastore)
+            return False
+        request_url = url(self.base_url, ['/geoserver/rest/workspaces',
+                                          workspace, 'datastores',
+                                          datastore, 'external.shp'])
+        headers = {'content-type': 'text/plain'}
+        datapath = 'file://{}/'.format(path.rstrip('/'))
+        response = requests.put(request_url, 
+                                auth=self.auth, headers=headers,
+                                data=datapath, params={'configure': 'all'})
+        success_msg = "shapefile datastore '%s' created successfully" % datastore
+        process_response(response, success_msg)
+        return response
     
     def create_datastore(self, workspace, datastore, connection_parameters):
         """
