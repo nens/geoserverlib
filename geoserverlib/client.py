@@ -82,15 +82,16 @@ class GeoserverClient(object):
         process_response(response, success_msg)
         return response
 
-    def delete_workspace(self, workspace):
+    def delete_workspace(self, workspace, recurse=False):
         """
         cURL example:
         curl -u admin:geoserver -XDELETE -H 'Content-type: text/xml' http://localhost:${GEOSERVER_PORT}/geoserver/rest/workspaces/deltaportaal
 
         """
+        params = {'recurse': str(recurse).lower()}
         request_url = url(self.base_url, ['/geoserver/rest/workspaces',
                                           workspace])
-        response = requests.delete(request_url, auth=self.auth)
+        response = requests.delete(request_url, auth=self.auth, params=params)
         success_msg = "deleted workspace '%s'" % workspace
         process_response(response, success_msg)
         return response
@@ -201,15 +202,16 @@ curl -v -u admin:geoserver -XPUT -H "Content-type: text/plain" -d "file:///var/l
         process_response(response, success_msg)
         return response
 
-    def delete_datastore(self, workspace, datastore):
+    def delete_datastore(self, workspace, datastore, recurse=False):
         """
         cURL example:
         curl -u admin:geoserver -XDELETE -H 'Content-type: text/xml' http://localhost:${GEOSERVER_PORT}/geoserver/rest/workspaces/deltaportaal/datastores/deltaportaal
 
         """
+        params = {'recurse': str(recurse).lower()}
         request_url = url(self.base_url, ['/geoserver/rest/workspaces',
                                           workspace, 'datastores', datastore])
-        response = requests.delete(request_url, auth=self.auth)
+        response = requests.delete(request_url, auth=self.auth, params=params)
         success_msg = "deleted datastore '%s'" % datastore
         process_response(response, success_msg)
         return response

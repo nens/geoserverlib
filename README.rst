@@ -22,7 +22,7 @@ Usage
 
    client.create_workspace(workspace)
    client.workspace_exists(workspace)  # returns True or False
-   client.delete_workspace(workspace)
+   client.delete_workspace(workspace, recurse=True)
 
 * shapefile methods::
 
@@ -50,7 +50,7 @@ Usage
    }
    client.create_datastore(workspace, datastore, connection_parameters)
    client.datastore_exists(workspace, datastore)  # returns True or False
-   client.delete_datastore(workspace, datastore)
+   client.delete_datastore(workspace, datastore, recurse=True)
 
 * feature type and layer methods::
 

@@ -5,7 +5,7 @@ Changelog of geoserverlib
 0.3.2 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Add recurse parameter to delete_workspace and delete_datastore
 
 
 0.3.1 (2013-06-11)
